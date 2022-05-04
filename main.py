@@ -29,7 +29,38 @@ api = Api(app)
 CORS(app)
 
 
-class status (Resource):
+async def download_file(url, dest):
+    if dest.exists():
+        return
+    async with aiohttp.ClientSession() as session:
+        async with session.get(url) as response:
+            data = await response.read()
+            with open(dest, 'wb') as f:
+                f.write(data)
+
+
+async def setup_learner():
+    await download_file(export_file_url, models_dir / export_file_name)
+
+    try:
+        learn = load_learner(models_dir)
+        return learn
+    except RuntimeError as e:
+        if len(e.args) > 0 and 'CPU-only machine' in e.args[0]:
+            print(e)
+            message = "\n\nThis model was trained with an old version of fastai and will not work in a CPU environment.\n\nPlease update the fastai library in your training environment and export your model again.\n\nSee instructions for 'Returning to work' at https://course.fast.ai."
+            raise RuntimeError(message)
+        else:
+            raise
+
+
+loop = asyncio.get_event_loop()
+tasks = [asyncio.ensure_future(setup_learner())]
+learn_c = loop.run_until_complete(asyncio.gather(*tasks))[0]
+loop.close()
+
+
+class Status(Resource):
     def get(self):
         try:
             return {'data': 'Api is Running'}
@@ -37,40 +68,11 @@ class status (Resource):
             return {'data': 'An Error Occurred during fetching Api'}
 
 
-api.add_resource(status, '/')
-
+api.add_resource(Status, '/')
 
 if __name__ == '__main__':
     app.run()
-# async def download_file(url, dest):
-#     if dest.exists():
-#         return
-#     async with aiohttp.ClientSession() as session:
-#         async with session.get(url) as response:
-#             data = await response.read()
-#             with open(dest, 'wb') as f:
-#                 f.write(data)
-#
-#
-# async def setup_learner():
-#     await download_file(export_file_url, models_dir / export_file_name)
-#
-#     try:
-#         learn = load_learner(models_dir)
-#         return learn
-#     except RuntimeError as e:
-#         if len(e.args) > 0 and 'CPU-only machine' in e.args[0]:
-#             print(e)
-#             message = "\n\nThis model was trained with an old version of fastai and will not work in a CPU environment.\n\nPlease update the fastai library in your training environment and export your model again.\n\nSee instructions for 'Returning to work' at https://course.fast.ai."
-#             raise RuntimeError(message)
-#         else:
-#             raise
-#
-#
-# loop = asyncio.get_event_loop()
-# tasks = [asyncio.ensure_future(setup_learner())]
-# learn_c = loop.run_until_complete(asyncio.gather(*tasks))[0]
-# loop.close()
+
 #
 #
 # @app.get("/")
