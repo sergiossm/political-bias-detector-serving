@@ -29,15 +29,15 @@ parser.add_argument('input_text', type=str)
 # Load model
 learn_c = load_learner(models_dir)
 
-preds = torch.load(models_dir / 'preds.pt')
-y = torch.load(models_dir / 'y.pt')
-losses = torch.load(models_dir / 'losses.pt')
+# preds = torch.load(models_dir / 'preds.pt')
+# y = torch.load(models_dir / 'y.pt')
+# losses = torch.load(models_dir / 'losses.pt')
+#
+# ci = ClassificationInterpretation(learn_c, preds, y, losses)
+# txt_ci = TextClassificationInterpretation(learn_c, preds, y, losses)
 
-ci = ClassificationInterpretation(learn_c, preds, y, losses)
-txt_ci = TextClassificationInterpretation(learn_c, preds, y, losses)
 
-
-class Status (Resource):
+class status (Resource):
     def get(self):
         try:
             return {'data': 'Api is Running'}
@@ -52,7 +52,7 @@ class Predict(Resource):
         pred = learn_c.predict(input_text)[2] * 100
         pred_list = pred.tolist()
 
-        asd = attention = txt_ci.intrinsic_attention(text=input_text)
+        # asd = attention = txt_ci.intrinsic_attention(text=input_text)
 
         return jsonify(preds={
                 'GCUP-EC-GC': pred_list[0],
@@ -63,7 +63,7 @@ class Predict(Resource):
             })
 
 
-api.add_resource(Status, '/')
+api.add_resource(status, '/')
 api.add_resource(Predict, '/predict')
 
 
