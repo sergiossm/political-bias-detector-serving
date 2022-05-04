@@ -1,11 +1,8 @@
 from fastai.text import *
 from sklearn.metrics import f1_score
-from flask import Flask, jsonify
-from flask_restful import Resource, Api
+from flask import Flask, jsonify, request
+from flask_restful import Resource, Api, reqparse
 from flask_cors import CORS
-
-export_file_url = 'https://www.dropbox.com/s/za657ddlzrvddth/export.pkl?raw=1'
-export_file_name = 'export.pkl'
 
 classes = ['GCUP-EC-GC', 'GCs', 'GP', 'GS', 'GVOX']
 
@@ -25,8 +22,22 @@ app = Flask(__name__)
 api = Api(app)
 CORS(app)
 
+# Define parser and request args
+parser = reqparse.RequestParser()
+parser.add_argument('input_text', type=str)
 
-class status (Resource):
+# Load model
+learn_c = load_learner(models_dir)
+
+preds = torch.load(models_dir / 'preds.pt')
+y = torch.load(models_dir / 'y.pt')
+losses = torch.load(models_dir / 'losses.pt')
+
+ci = ClassificationInterpretation(learn_c, preds, y, losses)
+txt_ci = TextClassificationInterpretation(learn_c, preds, y, losses)
+
+
+class Status (Resource):
     def get(self):
         try:
             return {'data': 'Api is Running'}
@@ -34,55 +45,27 @@ class status (Resource):
             return {'data': 'An Error Occurred during fetching Api'}
 
 
-api.add_resource(status, '/')
+class Predict(Resource):
+    def post(self):
+        json_data = request.get_json(force=True)
+        input_text = json_data['input_text']
+        pred = learn_c.predict(input_text)[2] * 100
+        pred_list = pred.tolist()
+
+        asd = attention = txt_ci.intrinsic_attention(text=input_text)
+
+        return jsonify(preds={
+                'GCUP-EC-GC': pred_list[0],
+                'GS': pred_list[3],
+                'GCs': pred_list[1],
+                'GP': pred_list[2],
+                'GVOX': pred_list[4],
+            })
+
+
+api.add_resource(Status, '/')
+api.add_resource(Predict, '/predict')
 
 
 if __name__ == '__main__':
     app.run()
-# async def download_file(url, dest):
-#     if dest.exists():
-#         return
-#     async with aiohttp.ClientSession() as session:
-#         async with session.get(url) as response:
-#             data = await response.read()
-#             with open(dest, 'wb') as f:
-#                 f.write(data)
-#
-#
-# async def setup_learner():
-#     await download_file(export_file_url, models_dir / export_file_name)
-#
-#     try:
-#         learn = load_learner(models_dir)
-#         return learn
-#     except RuntimeError as e:
-#         if len(e.args) > 0 and 'CPU-only machine' in e.args[0]:
-#             print(e)
-#             message = "\n\nThis model was trained with an old version of fastai and will not work in a CPU environment.\n\nPlease update the fastai library in your training environment and export your model again.\n\nSee instructions for 'Returning to work' at https://course.fast.ai."
-#             raise RuntimeError(message)
-#         else:
-#             raise
-#
-#
-# loop = asyncio.get_event_loop()
-# tasks = [asyncio.ensure_future(setup_learner())]
-# learn_c = loop.run_until_complete(asyncio.gather(*tasks))[0]
-# loop.close()
-#
-#
-# @app.get("/")
-# def read_root():
-#     return {"Hello": "World"}
-#
-#
-# @app.post("/items/")
-# async def create_item(item: Item):
-#     pred = learn_c.predict(item.text)[2] * 100
-#
-#     return {
-#         'Unidas Podemos': f'{pred[0]:.2f}%',
-#         'PSOE': f'{pred[3]:.2f}%',
-#         'Ciudadanos': f'{pred[1]:.2f}%',
-#         'PP': f'{pred[2]:.2f}%',
-#         'VOX': f'{pred[4]:.2f}%',
-#     }
