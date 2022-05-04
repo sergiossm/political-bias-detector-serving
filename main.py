@@ -13,11 +13,6 @@ models_dir.mkdir(parents=True, exist_ok=True)
 warnings.filterwarnings('ignore')  # "error", "ignore", "always", "default", "module" or "on'
 
 
-@np_func
-def f1(inp, targ):
-    return f1_score(targ, np.argmax(inp, axis=-1), average='weighted')
-
-
 app = Flask(__name__)
 api = Api(app)
 CORS(app)
@@ -25,6 +20,11 @@ CORS(app)
 # Define parser and request args
 parser = reqparse.RequestParser()
 parser.add_argument('input_text', type=str)
+
+
+def f1(inp, targ):
+    return f1_score(targ, np.argmax(inp, axis=-1), average='weighted')
+
 
 # Load model
 learn_c = load_learner(models_dir)
