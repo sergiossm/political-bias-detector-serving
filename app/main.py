@@ -4,9 +4,12 @@ import uvicorn
 
 from fastai.text import *
 from sklearn.metrics import f1_score
-from starlette.applications import Starlette
-from starlette.middleware.cors import CORSMiddleware
-from starlette.responses import JSONResponse
+from fastapi import FastAPI
+from pydantic import BaseModel
+
+
+class Item(BaseModel):
+    text: str
 
 
 export_file_url = 'https://www.dropbox.com/s/za657ddlzrvddth/export.pkl?raw=1'
@@ -26,8 +29,7 @@ def f1(inp, targ):
     return f1_score(targ, np.argmax(inp, axis=-1), average='weighted')
 
 
-app = Starlette()
-app.add_middleware(CORSMiddleware, allow_origins=['*'], allow_headers=['X-Requested-With', 'Content-Type'])
+app = FastAPI()
 
 
 async def download_file(url, dest):
@@ -61,22 +63,19 @@ learn_c = loop.run_until_complete(asyncio.gather(*tasks))[0]
 loop.close()
 
 
-@app.route('/predict', methods=['POST'])
-async def predict(request):
-    data = await request.body()
+@app.get("/")
+def read_root():
+    return {"Hello": "World"}
 
-    input_text = json.loads(data.decode('utf-8'))['input_text']
-    pred = learn_c.predict(input_text)[2] * 100
 
-    return JSONResponse({
+@app.post("/items/")
+async def create_item(item: Item):
+    pred = learn_c.predict(item.text)[2] * 100
+
+    return {
         'Unidas Podemos': f'{pred[0]:.2f}%',
         'PSOE': f'{pred[3]:.2f}%',
         'Ciudadanos': f'{pred[1]:.2f}%',
         'PP': f'{pred[2]:.2f}%',
         'VOX': f'{pred[4]:.2f}%',
-    })
-
-
-if __name__ == '__main__':
-    if 'serve' in sys.argv:
-        uvicorn.run(app=app, host='0.0.0.0', port=8501, log_level="info")
+    }

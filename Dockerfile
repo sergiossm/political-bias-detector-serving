@@ -1,15 +1,11 @@
 FROM python:3.7.13
 
-RUN apt-get update && apt-get install -y git python3-dev gcc \
-    && rm -rf /var/lib/apt/lists/*
+WORKDIR /code
 
-COPY requirements.txt .
-RUN pip install --upgrade -r requirements.txt
+COPY ./requirements.txt /code/requirements.txt
 
-COPY src src/
+RUN pip install --no-cache-dir --upgrade -r /code/requirements.txt
 
-RUN python src/server.py
+COPY ./app /code/app
 
-EXPOSE 5000
-
-CMD ["python", "src/server.py", "serve"]
+CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "80"]
