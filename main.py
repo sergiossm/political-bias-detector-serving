@@ -1,16 +1,11 @@
 import aiohttp
 import asyncio
-import uvicorn
 
 from fastai.text import *
 from sklearn.metrics import f1_score
-from fastapi import FastAPI
-from pydantic import BaseModel
-
-
-class Item(BaseModel):
-    text: str
-
+from flask import Flask, jsonify
+from flask_restful import Resource, Api
+from flask_cors import CORS
 
 export_file_url = 'https://www.dropbox.com/s/za657ddlzrvddth/export.pkl?raw=1'
 export_file_name = 'export.pkl'
@@ -29,53 +24,68 @@ def f1(inp, targ):
     return f1_score(targ, np.argmax(inp, axis=-1), average='weighted')
 
 
-app = FastAPI()
+app = Flask(__name__)
+api = Api(app)
+CORS(app)
 
 
-async def download_file(url, dest):
-    if dest.exists():
-        return
-    async with aiohttp.ClientSession() as session:
-        async with session.get(url) as response:
-            data = await response.read()
-            with open(dest, 'wb') as f:
-                f.write(data)
+class status (Resource):
+    def get(self):
+        try:
+            return {'data': 'Api is Running'}
+        except:
+            return {'data': 'An Error Occurred during fetching Api'}
 
 
-async def setup_learner():
-    await download_file(export_file_url, models_dir / export_file_name)
-
-    try:
-        learn = load_learner(models_dir)
-        return learn
-    except RuntimeError as e:
-        if len(e.args) > 0 and 'CPU-only machine' in e.args[0]:
-            print(e)
-            message = "\n\nThis model was trained with an old version of fastai and will not work in a CPU environment.\n\nPlease update the fastai library in your training environment and export your model again.\n\nSee instructions for 'Returning to work' at https://course.fast.ai."
-            raise RuntimeError(message)
-        else:
-            raise
+api.add_resource(status, '/')
 
 
-loop = asyncio.get_event_loop()
-tasks = [asyncio.ensure_future(setup_learner())]
-learn_c = loop.run_until_complete(asyncio.gather(*tasks))[0]
-loop.close()
-
-
-@app.get("/")
-def read_root():
-    return {"Hello": "World"}
-
-
-@app.post("/items/")
-async def create_item(item: Item):
-    pred = learn_c.predict(item.text)[2] * 100
-
-    return {
-        'Unidas Podemos': f'{pred[0]:.2f}%',
-        'PSOE': f'{pred[3]:.2f}%',
-        'Ciudadanos': f'{pred[1]:.2f}%',
-        'PP': f'{pred[2]:.2f}%',
-        'VOX': f'{pred[4]:.2f}%',
-    }
+if __name__ == '__main__':
+    app.run()
+# async def download_file(url, dest):
+#     if dest.exists():
+#         return
+#     async with aiohttp.ClientSession() as session:
+#         async with session.get(url) as response:
+#             data = await response.read()
+#             with open(dest, 'wb') as f:
+#                 f.write(data)
+#
+#
+# async def setup_learner():
+#     await download_file(export_file_url, models_dir / export_file_name)
+#
+#     try:
+#         learn = load_learner(models_dir)
+#         return learn
+#     except RuntimeError as e:
+#         if len(e.args) > 0 and 'CPU-only machine' in e.args[0]:
+#             print(e)
+#             message = "\n\nThis model was trained with an old version of fastai and will not work in a CPU environment.\n\nPlease update the fastai library in your training environment and export your model again.\n\nSee instructions for 'Returning to work' at https://course.fast.ai."
+#             raise RuntimeError(message)
+#         else:
+#             raise
+#
+#
+# loop = asyncio.get_event_loop()
+# tasks = [asyncio.ensure_future(setup_learner())]
+# learn_c = loop.run_until_complete(asyncio.gather(*tasks))[0]
+# loop.close()
+#
+#
+# @app.get("/")
+# def read_root():
+#     return {"Hello": "World"}
+#
+#
+# @app.post("/items/")
+# async def create_item(item: Item):
+#     pred = learn_c.predict(item.text)[2] * 100
+#
+#     return {
+#         'Unidas Podemos': f'{pred[0]:.2f}%',
+#         'PSOE': f'{pred[3]:.2f}%',
+#         'Ciudadanos': f'{pred[1]:.2f}%',
+#         'PP': f'{pred[2]:.2f}%',
+#         'VOX': f'{pred[4]:.2f}%',
+#     }

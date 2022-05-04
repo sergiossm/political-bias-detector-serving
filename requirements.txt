@@ -1,12 +1,14 @@
 aiohttp==3.7.4
 asyncio==3.4.3
 fastai==1.0.61
-fastapi>=0.68.0,<0.69.0
 torch==1.2.0+cpu
 torchvision==0.4.0+cpu
 -f https://download.pytorch.org/whl/torch_stable.html
-pydantic>=1.8.0,<2.0.0
 spacy==2.2.4
 numpy==1.19.0
 scikit-learn==1.0.2
-uvicorn>=0.15.0,<0.16.0
+Flask==1.1.4
+Flask-Cors==3.0.10
+Flask-RESTful==0.3.8
+MarkupSafe==1.1.1
+gunicorn==20.0.4
