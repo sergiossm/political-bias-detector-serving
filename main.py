@@ -1,3 +1,4 @@
+import numpy as np
 from fastai.text import Path, warnings, load_learner, torch, ClassificationInterpretation, TextClassificationInterpretation
 from flask import Flask, jsonify, request
 from flask_restful import Resource, Api, reqparse
@@ -53,7 +54,7 @@ class Predict(Resource):
                 'GCs': pred_list[1],
                 'GP': pred_list[2],
                 'GVOX': pred_list[4],
-            }, attention=txt_ci.intrinsic_attention(text=input_text).tolist())
+            }, attention=np.array(txt_ci.intrinsic_attention(text=input_text)).tolist())
 
 
 api.add_resource(status, '/')
