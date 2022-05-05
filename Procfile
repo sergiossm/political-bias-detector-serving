@@ -1,1 +1,1 @@
-web: gunicorn  main:app --preload --max-requests 5
+web: gunicorn  main:app --max-requests 5
