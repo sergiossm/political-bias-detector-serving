@@ -47,15 +47,13 @@ class Predict(Resource):
         pred = learn_c.predict(input_text)[2] * 100
         pred_list = pred.tolist()
 
-        # asd = attention = txt_ci.intrinsic_attention(text=input_text)
-
         return jsonify(preds={
                 'GCUP-EC-GC': pred_list[0],
                 'GS': pred_list[3],
                 'GCs': pred_list[1],
                 'GP': pred_list[2],
                 'GVOX': pred_list[4],
-            })
+            }, attention=txt_ci.intrinsic_attention(text=input_text).tolist())
 
 
 api.add_resource(status, '/')
