@@ -1,5 +1,4 @@
-from fastai.text import *
-from sklearn.metrics import f1_score
+from fastai.text import Path, warnings, load_learner
 from flask import Flask, jsonify, request
 from flask_restful import Resource, Api, reqparse
 from flask_cors import CORS
@@ -20,11 +19,6 @@ CORS(app)
 # Define parser and request args
 parser = reqparse.RequestParser()
 parser.add_argument('input_text', type=str)
-
-
-@np_func
-def f1(inp, targ):
-    return f1_score(targ, np.argmax(inp, axis=-1), average='weighted')
 
 
 # Load model
