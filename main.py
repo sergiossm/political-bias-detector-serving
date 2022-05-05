@@ -1,4 +1,4 @@
-from fastai.text import Path, warnings, load_learner
+from fastai.text import Path, warnings, load_learner, torch, ClassificationInterpretation, TextClassificationInterpretation
 from flask import Flask, jsonify, request
 from flask_restful import Resource, Api, reqparse
 from flask_cors import CORS
@@ -24,12 +24,12 @@ parser.add_argument('input_text', type=str)
 # Load model
 learn_c = load_learner(models_dir)
 
-# preds = torch.load(models_dir / 'preds.pt')
-# y = torch.load(models_dir / 'y.pt')
-# losses = torch.load(models_dir / 'losses.pt')
-#
-# ci = ClassificationInterpretation(learn_c, preds, y, losses)
-# txt_ci = TextClassificationInterpretation(learn_c, preds, y, losses)
+preds = torch.load(models_dir / 'preds.pt')
+y = torch.load(models_dir / 'y.pt')
+losses = torch.load(models_dir / 'losses.pt')
+
+ci = ClassificationInterpretation(learn_c, preds, y, losses)
+txt_ci = TextClassificationInterpretation(learn_c, preds, y, losses)
 
 
 class status (Resource):
